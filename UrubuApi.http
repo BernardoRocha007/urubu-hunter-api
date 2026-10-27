@@ -1,0 +1,25 @@
+@UrubuApi_HostAddress = http://localhost:5033
+
+### 1. Health Check
+GET {{UrubuApi_HostAddress}}/api/health
+Accept: application/json
+
+### 2. Snapshot Estático para Next.js (ISR)
+GET {{UrubuApi_HostAddress}}/api/feed/static
+Accept: application/json
+
+### 3. Feed com Filtros Dinâmicos
+GET {{UrubuApi_HostAddress}}/api/feed?category=Camisetas&minScore=80
+Accept: application/json
+
+### 4. Categorias Disponíveis
+GET {{UrubuApi_HostAddress}}/api/categories
+Accept: application/json
+
+### 5. Dar Feedback em um Produto (Curtir / Favoritar)
+POST {{UrubuApi_HostAddress}}/api/items/seed-1/feedback
+Content-Type: application/json
+
+{
+  "feedback": "liked"
+}
