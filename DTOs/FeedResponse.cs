@@ -1,4 +1,4 @@
-﻿using UrubuApi.Models;
+using UrubuApi.Models;
 
 namespace UrubuApi.DTOs;
 
@@ -21,6 +21,8 @@ public record FeedResponse(
 );
 
 public record FeedbackRequest(string? Feedback);
+
+public record HuntRequest(string? domain, List<string>? targetStores);
 
 public record HuntStatusDto(
     bool isRunning,

@@ -1,16 +1,15 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using UrubuApi.Data;
 using UrubuApi.DTOs;
 using UrubuApi.Models;
 using UrubuApi.Services;
+using UrubuApi.Services.Orchestrator;
 
 namespace UrubuApi.Endpoints;
 
 public static class FeedEndpoints
 {
-    private static HuntStatusDto _huntStatus = new(false, "fashion", DateTime.UtcNow.ToString("o"), 0, 0, null);
-
     public static RouteGroupBuilder MapFeedEndpoints(this IEndpointRouteBuilder app)
     {
         var group = app.MapGroup("/api");
@@ -26,15 +25,15 @@ public static class FeedEndpoints
                     name = "Moda Streetwear",
                     description = "Curadoria de streetwear, marcas de nicho do Instagram, cortes oversized e achados com desconto.",
                     icon = "STREET",
-                    defaultKeywords = new[] { "streetwear", "oversized", "corte boxy", "vintage 90s", "tons terrosos", "100% algodÃ£o", "minimalista urbano" },
+                    defaultKeywords = new[] { "streetwear", "oversized", "corte boxy", "vintage 90s", "tons terrosos", "100% algodão", "minimalista urbano" },
                     sizeOptions = new[] { "PP", "P", "M", "G", "GG", "XG", "38", "40", "42", "44", "46", "39", "40", "41", "42", "43" },
-                    defaultStores = new[] { "https://pacecompany.com.br", "https://sufgang.com.br", "https://kuehlofficial.com", "https://piet.com.br" }
+                    defaultStores = new[] { "https://classofficial.com.br", "https://pacecompany.com.br", "https://sufgang.com.br", "https://kuehlofficial.com", "https://piet.com.br" }
                 },
                 ["pc-hardware"] = new
                 {
                     id = "pc-hardware",
                     name = "Hardware & Tech",
-                    description = "Monitoramento de placas de vÃ­deo, processadores e promoÃ§Ãµes de componentes custo-benefÃ­cio.",
+                    description = "Monitoramento de placas de vídeo, processadores e promoções de componentes custo-benefício.",
                     icon = "TECH",
                     defaultKeywords = new[] { "RTX 4070", "RTX 4060 Ti", "Ryzen 7 7800X3D", "DDR5 6000MHz", "NVMe Gen4 2TB" },
                     sizeOptions = new[] { "Mini-ITX", "Micro-ATX", "ATX", "E-ATX", "16GB", "32GB", "64GB", "1TB", "2TB" },
@@ -58,9 +57,9 @@ public static class FeedEndpoints
                     Domain = d,
                     AestheticKeywords = new List<string> { "streetwear", "boxy", "heavyweight", "workwear", "baggy" },
                     PreferredSizes = new List<string> { "M", "G", "GG" },
-                    MaxPrice = 450m,
-                    MinDiscountPct = 10,
-                    ForbiddenTerms = new List<string> { "skinny", "poliÃ©ster" },
+                    MaxPrice = 500m,
+                    MinDiscountPct = 0,
+                    ForbiddenTerms = new List<string> { "skinny", "poliéster" },
                     TargetStores = new List<string> { "https://classofficial.com.br", "https://sufgang.com.br", "https://pacecompany.com.br" }
                 };
             }
@@ -121,7 +120,7 @@ public static class FeedEndpoints
         })
         .WithName("GetItems");
 
-        // 5. GET /api/feed/static (Snapshot estÃ¡tico de alta velocidade)
+        // 5. GET /api/feed/static (Snapshot estático de alta velocidade)
         group.MapGet("/feed/static", async ([FromServices] IFeedService feedService, [FromQuery] string? domain, CancellationToken ct) =>
         {
             var result = await feedService.GetStaticFeedAsync(domain ?? "fashion", ct);
@@ -141,7 +140,7 @@ public static class FeedEndpoints
         group.MapPost("/items/{id}/feedback", async (string id, [FromBody] FeedbackRequest request, [FromServices] IFeedService feedService, CancellationToken ct) =>
         {
             var updated = await feedService.SetFeedbackAsync(id, request.Feedback, ct);
-            if (updated == null) return Results.NotFound(new { error = "Item nÃ£o encontrado." });
+            if (updated == null) return Results.NotFound(new { error = "Item não encontrado." });
             return Results.Ok(updated);
         })
         .WithName("SetItemFeedback");
@@ -159,24 +158,27 @@ public static class FeedEndpoints
         })
         .WithName("ClearFeedItems");
 
-        // 9. POST /api/hunt
-        group.MapPost("/hunt", ([FromBody] object? body) =>
+        // 9. POST /api/hunt (Disparo de garimpo com scraper real em background)
+        group.MapPost("/hunt", async ([FromBody] HuntRequest? request, [FromServices] IHunterOrchestrator orchestrator, CancellationToken ct) =>
         {
-            _huntStatus = new HuntStatusDto(true, "fashion", DateTime.UtcNow.ToString("o"), 3, 3, null);
-
-            // Simula conclusÃ£o assÃ­ncrona para o polling
-            Task.Run(async () =>
+            var status = orchestrator.GetStatus();
+            if (status.isRunning)
             {
-                await Task.Delay(3000);
-                _huntStatus = new HuntStatusDto(false, "fashion", DateTime.UtcNow.ToString("o"), 3, 3, null);
-            });
+                return Results.Conflict(new { error = "Um garimpo já está em andamento." });
+            }
 
-            return Results.Ok(new { message = "Garimpo iniciado com sucesso!", status = _huntStatus });
+            var domain = request?.domain ?? "fashion";
+            var updatedStatus = await orchestrator.TriggerHuntAsync(domain, request?.targetStores, ct);
+
+            return Results.Ok(new { message = "Garimpo iniciado com sucesso!", status = updatedStatus });
         })
         .WithName("TriggerHunt");
 
-        // 10. GET /api/hunt/status
-        group.MapGet("/hunt/status", () => Results.Ok(_huntStatus))
+        // 10. GET /api/hunt/status (Consulta de status do garimpo)
+        group.MapGet("/hunt/status", ([FromServices] IHunterOrchestrator orchestrator) =>
+        {
+            return Results.Ok(orchestrator.GetStatus());
+        })
         .WithName("GetHuntStatus");
 
         // 11. GET /api/watchlist & POST /api/watchlist
