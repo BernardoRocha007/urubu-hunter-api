@@ -5,27 +5,27 @@ using UrubuApi.Services.Crawlers.Http;
 
 namespace UrubuApi.Services.Crawlers;
 
-public class MercadoLivreScraper : ISiteScraper
+public class ColetorMercadoLivre : IColetorSite
 {
-    private readonly ICrawlerHttpClient _httpClient;
+    private readonly IClienteHttpColetor _clienteHttp;
 
     public string Id => "mercadolivre";
 
-    public MercadoLivreScraper(ICrawlerHttpClient httpClient)
+    public ColetorMercadoLivre(IClienteHttpColetor clienteHttp)
     {
-        _httpClient = httpClient;
+        _clienteHttp = clienteHttp;
     }
 
-    public bool CanHandle(string url)
+    public bool PodeProcessar(string url)
     {
         return url.Contains("mercadolivre.com.br", StringComparison.OrdinalIgnoreCase);
     }
 
-    public async Task<IReadOnlyList<Product>> ScrapeStoreAsync(string storeUrl, CancellationToken ct = default)
+    public async Task<IReadOnlyList<Product>> VarrerLojaAsync(string urlLoja, CancellationToken ct = default)
     {
-        var cleanUrl = UrlUtils.CleanStoreUrl(storeUrl);
-        var origin = UrlUtils.GetStoreOrigin(storeUrl);
-        var products = new List<Product>();
+        var cleanUrl = UrlUtils.LimparUrlLoja(urlLoja);
+        var origin = UrlUtils.ObterOrigemLoja(urlLoja);
+        var produtos = new List<Product>();
 
         var searchUrl = cleanUrl;
         var isRoot = cleanUrl == origin || cleanUrl == $"{origin}/" || cleanUrl.Contains("www.mercadolivre.com.br");
@@ -34,8 +34,8 @@ public class MercadoLivreScraper : ISiteScraper
             searchUrl = "https://lista.mercadolivre.com.br/calcados-roupas-bolsas/streetwear_NoIndex_True";
         }
 
-        var html = await _httpClient.GetHtmlAsync(searchUrl, ct);
-        if (string.IsNullOrWhiteSpace(html)) return products;
+        var html = await _clienteHttp.ObterHtmlAsync(searchUrl, ct);
+        if (string.IsNullOrWhiteSpace(html)) return produtos;
 
         var doc = new HtmlDocument();
         doc.LoadHtml(html);
@@ -63,20 +63,20 @@ public class MercadoLivreScraper : ISiteScraper
 
                 if (!string.IsNullOrEmpty(title) && !string.IsNullOrEmpty(link))
                 {
-                    var cleanLink = UrlUtils.CleanStoreUrl(link);
-                    var price = PriceUtils.ParsePrice(priceText);
+                    var cleanLink = UrlUtils.LimparUrlLoja(link);
+                    var price = PrecoUtils.ConverterPreco(priceText);
                     if (price <= 0m) price = 149.90m;
 
-                    products.Add(new Product
+                    produtos.Add(new Product
                     {
-                        Id = UrlUtils.GenerateEntityId("ml", cleanLink),
+                        Id = UrlUtils.GerarIdEntidade("ml", cleanLink),
                         Domain = "fashion",
                         Title = title.Length > 120 ? title[..120] : title,
                         Brand = "Mercado Livre",
                         Price = price,
                         Url = cleanLink,
                         Images = !string.IsNullOrEmpty(imgSrc) ? new List<string> { imgSrc } : new List<string> { "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=800&q=80" },
-                        Category = CategoryUtils.InferCategory(title),
+                        Category = CategoriaUtils.InferirCategoria(title),
                         AvailableSizes = new List<string> { "Consultar Loja" },
                         Tags = new List<string> { "mercado-livre", "marketplace", "streetwear" },
                         Source = "mercadolivre.com.br",
@@ -86,18 +86,18 @@ public class MercadoLivreScraper : ISiteScraper
             }
         }
 
-        return products;
+        return produtos;
     }
 
-    public async Task<Product?> ScrapeProductAsync(string productUrl, CancellationToken ct = default)
+    public async Task<Product?> VarrerProdutoAsync(string urlProduto, CancellationToken ct = default)
     {
-        var cleanUrl = UrlUtils.CleanStoreUrl(productUrl);
+        var cleanUrl = UrlUtils.LimparUrlLoja(urlProduto);
         var match = Regex.Match(cleanUrl, @"(MLB-?\d+)", RegexOptions.IgnoreCase);
         var mlbId = match.Success ? match.Groups[1].Value.Replace("-", "") : null;
 
         return new Product
         {
-            Id = UrlUtils.GenerateEntityId("ml", mlbId ?? cleanUrl),
+            Id = UrlUtils.GerarIdEntidade("ml", mlbId ?? cleanUrl),
             Domain = "fashion",
             Title = $"Produto Mercado Livre {mlbId}",
             Brand = "Mercado Livre",

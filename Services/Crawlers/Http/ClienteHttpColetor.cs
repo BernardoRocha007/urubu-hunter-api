@@ -2,22 +2,22 @@ using System.Text.Json;
 
 namespace UrubuApi.Services.Crawlers.Http;
 
-public class CrawlerHttpClient : ICrawlerHttpClient
+public class ClienteHttpColetor : IClienteHttpColetor
 {
     private readonly IHttpClientFactory _httpClientFactory;
-    private readonly ILogger<CrawlerHttpClient> _logger;
+    private readonly ILogger<ClienteHttpColetor> _logger;
 
-    public CrawlerHttpClient(IHttpClientFactory httpClientFactory, ILogger<CrawlerHttpClient> logger)
+    public ClienteHttpColetor(IHttpClientFactory httpClientFactory, ILogger<ClienteHttpColetor> logger)
     {
         _httpClientFactory = httpClientFactory;
         _logger = logger;
     }
 
-    public async Task<string?> GetHtmlAsync(string url, CancellationToken ct = default)
+    public async Task<string?> ObterHtmlAsync(string url, CancellationToken ct = default)
     {
         try
         {
-            var client = CreateClient();
+            var client = CriarCliente();
             using var response = await client.GetAsync(url, ct);
             if (!response.IsSuccessStatusCode) return null;
 
@@ -30,11 +30,11 @@ public class CrawlerHttpClient : ICrawlerHttpClient
         }
     }
 
-    public async Task<string?> GetXmlAsync(string url, CancellationToken ct = default)
+    public async Task<string?> ObterXmlAsync(string url, CancellationToken ct = default)
     {
         try
         {
-            var client = CreateClient();
+            var client = CriarCliente();
             using var response = await client.GetAsync(url, ct);
             if (!response.IsSuccessStatusCode) return null;
 
@@ -47,11 +47,11 @@ public class CrawlerHttpClient : ICrawlerHttpClient
         }
     }
 
-    public async Task<JsonDocument?> GetJsonAsync(string url, CancellationToken ct = default)
+    public async Task<JsonDocument?> ObterJsonAsync(string url, CancellationToken ct = default)
     {
         try
         {
-            var client = CreateClient();
+            var client = CriarCliente();
             using var response = await client.GetAsync(url, ct);
             if (!response.IsSuccessStatusCode) return null;
 
@@ -66,12 +66,12 @@ public class CrawlerHttpClient : ICrawlerHttpClient
         }
         catch (Exception ex)
         {
-            _logger.LogDebug(ex, "Falha ao obter ou parsear JSON de {Url}", url);
+            _logger.LogDebug(ex, "Falha ao obter ou converter JSON de {Url}", url);
             return null;
         }
     }
 
-    private HttpClient CreateClient()
+    private HttpClient CriarCliente()
     {
         var client = _httpClientFactory.CreateClient();
         client.DefaultRequestHeaders.UserAgent.ParseAdd("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36");

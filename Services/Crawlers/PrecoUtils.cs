@@ -4,14 +4,14 @@ using HtmlAgilityPack;
 
 namespace UrubuApi.Services.Crawlers;
 
-public static class PriceUtils
+public static class PrecoUtils
 {
-    public static decimal ParsePrice(string? text)
+    public static decimal ConverterPreco(string? texto)
     {
-        if (string.IsNullOrWhiteSpace(text)) return 0m;
+        if (string.IsNullOrWhiteSpace(texto)) return 0m;
 
         // 1. Padrão brasileiro: R$ 199,90 ou R$ 1.299,00
-        var brMatch = Regex.Match(text, @"R?\$?\s*(\d{1,3}(?:\.\d{3})*,\d{2})");
+        var brMatch = Regex.Match(texto, @"R?\$?\s*(\d{1,3}(?:\.\d{3})*,\d{2})");
         if (brMatch.Success)
         {
             var raw = brMatch.Groups[1].Value.Replace(".", "").Replace(",", ".");
@@ -22,7 +22,7 @@ public static class PriceUtils
         }
 
         // 2. Padrão internacional com ponto: 199.90 ou 1,299.90
-        var usMatch = Regex.Match(text, @"\b(\d+(?:,\d{3})*\.\d{2})\b");
+        var usMatch = Regex.Match(texto, @"\b(\d+(?:,\d{3})*\.\d{2})\b");
         if (usMatch.Success)
         {
             var raw = usMatch.Groups[1].Value.Replace(",", "");
@@ -33,7 +33,7 @@ public static class PriceUtils
         }
 
         // 3. Fallback dígitos simples
-        var digitsMatch = Regex.Match(text, @"\b(\d{2,6})\b");
+        var digitsMatch = Regex.Match(texto, @"\b(\d{2,6})\b");
         if (digitsMatch.Success && decimal.TryParse(digitsMatch.Groups[1].Value, NumberStyles.Any, CultureInfo.InvariantCulture, out var intVal))
         {
             return intVal;
@@ -42,14 +42,14 @@ public static class PriceUtils
         return 0m;
     }
 
-    public static decimal ExtractPriceFromDocument(HtmlDocument doc)
+    public static decimal ExtrairPrecoDoDocumento(HtmlDocument doc)
     {
         var priceNodes = doc.DocumentNode.SelectNodes("//*[contains(text(), 'R$')]");
         if (priceNodes != null)
         {
             foreach (var node in priceNodes)
             {
-                var price = ParsePrice(node.InnerText);
+                var price = ConverterPreco(node.InnerText);
                 if (price > 0m) return price;
             }
         }

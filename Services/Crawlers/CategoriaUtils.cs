@@ -2,9 +2,9 @@ using System.Text.RegularExpressions;
 
 namespace UrubuApi.Services.Crawlers;
 
-public static class CategoryUtils
+public static class CategoriaUtils
 {
-    private static readonly (string Category, string Pattern)[] CategoryRules = new[]
+    private static readonly (string Categoria, string Padrao)[] RegrasCategoria = new[]
     {
         ("Calças", @"\b(cal[çc]as?|pants?|tailored\s*pants|alfaiataria|cargo\s*pants|sweatpants|trousers?|jeans)\b"),
         ("Jaquetas & Casacos", @"\b(jaquetas?|jackets?|casacos?|coats?|coach|bomber|puffer|fleece|windbreaker|corta\s*vento|biker|blazer|anorak|parka|sobretudo)\b"),
@@ -16,23 +16,23 @@ public static class CategoryUtils
         ("Camisetas & Polos", @"\b(camisetas?|tees?|t-shirts?|t\s*shirt|polos?|camisas?|regatas?|tanks?|baby\s*look|long\s*sleeve|manga\s*longa)\b")
     };
 
-    public static string InferCategory(string title, IEnumerable<string>? tags = null, string? originalCategory = null)
+    public static string InferirCategoria(string titulo, IEnumerable<string>? tags = null, string? categoriaOriginal = null)
     {
-        if (!string.IsNullOrWhiteSpace(originalCategory) &&
-            !originalCategory.Equals("Geral", StringComparison.OrdinalIgnoreCase) &&
-            !originalCategory.Equals("Streetwear", StringComparison.OrdinalIgnoreCase) &&
-            !originalCategory.Equals("Vestuário", StringComparison.OrdinalIgnoreCase))
+        if (!string.IsNullOrWhiteSpace(categoriaOriginal) &&
+            !categoriaOriginal.Equals("Geral", StringComparison.OrdinalIgnoreCase) &&
+            !categoriaOriginal.Equals("Streetwear", StringComparison.OrdinalIgnoreCase) &&
+            !categoriaOriginal.Equals("Vestuário", StringComparison.OrdinalIgnoreCase))
         {
-            return originalCategory.Trim();
+            return categoriaOriginal.Trim();
         }
 
-        var textToAnalyze = $"{title} {(tags != null ? string.Join(" ", tags) : string.Empty)}".ToLowerInvariant();
+        var texto = $"{titulo} {(tags != null ? string.Join(" ", tags) : string.Empty)}".ToLowerInvariant();
 
-        foreach (var (category, pattern) in CategoryRules)
+        foreach (var (categoria, padrao) in RegrasCategoria)
         {
-            if (Regex.IsMatch(textToAnalyze, pattern, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
+            if (Regex.IsMatch(texto, padrao, RegexOptions.IgnoreCase | RegexOptions.CultureInvariant))
             {
-                return category;
+                return categoria;
             }
         }
 
