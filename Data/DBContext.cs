@@ -1,4 +1,4 @@
-﻿using System.Text.Json;
+using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.ChangeTracking;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
@@ -6,13 +6,14 @@ using UrubuApi.Models;
 
 namespace UrubuApi.Data;
 
-public class UrubuDbContext : DbContext
+public class DBContext : DbContext
 {
-    public UrubuDbContext(DbContextOptions<UrubuDbContext> options) : base(options) { }
+    public DBContext(DbContextOptions<DBContext> options) : base(options) { }
 
     public DbSet<CuratedItem> CuratedItems => Set<CuratedItem>();
     public DbSet<EvaluationResult> Evaluations => Set<EvaluationResult>();
     public DbSet<StyleProfile> StyleProfiles => Set<StyleProfile>();
+    public DbSet<Usuario> Usuarios => Set<Usuario>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -28,6 +29,14 @@ public class UrubuDbContext : DbContext
             c => c == null ? 0 : JsonSerializer.Serialize(c, (JsonSerializerOptions?)null).GetHashCode(),
             c => c == null ? new List<string>() : JsonSerializer.Deserialize<List<string>>(JsonSerializer.Serialize(c, (JsonSerializerOptions?)null), (JsonSerializerOptions?)null)!
         );
+
+        modelBuilder.Entity<Usuario>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => e.Email).IsUnique();
+            entity.Property(e => e.Email).IsRequired();
+            entity.Property(e => e.SenhaHash).IsRequired();
+        });
 
         modelBuilder.Entity<CuratedItem>(entity =>
         {
