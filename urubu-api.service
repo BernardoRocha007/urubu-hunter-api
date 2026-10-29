@@ -1,0 +1,20 @@
+[Unit]
+Description=Urubu Hunter API (.NET 10 ASP.NET Core)
+After=network.target
+
+[Service]
+Type=simple
+User=opc
+WorkingDirectory=/opt/urubu-hunter-api
+ExecStart=/opt/urubu-hunter-api/UrubuApi
+Restart=always
+RestartSec=3
+Environment="ASPNETCORE_ENVIRONMENT=Production"
+Environment="ASPNETCORE_URLS=http://0.0.0.0:5033;http://0.0.0.0:80"
+Environment="ConnectionStrings__DefaultConnection=Data Source=/opt/urubu-hunter-api/data/urubu.db"
+Environment="ALLOWED_API_KEYS=urubu_live_1030229af00cec3184cf49ff05d46b367451d602956dd470"
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+LimitNOFILE=65536
+
+[Install]
+WantedBy=multi-user.target

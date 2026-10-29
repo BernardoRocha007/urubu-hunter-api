@@ -1,4 +1,4 @@
-﻿bin/
+bin/
 obj/
 *.db
 *.db-shm
@@ -6,3 +6,5 @@ obj/
 .vs/
 *.user
 dotnet-skills-temp/
+publish/
+publish-linux/

@@ -1,0 +1,23 @@
+services:
+  urubu-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: urubu-hunter-api
+    restart: always
+    ports:
+      - "5033:5033"
+      - "80:5033"
+    volumes:
+      # Monta a pasta data local para persistir o SQLite urubu.db fora do container
+      - ./data:/app/data
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - ASPNETCORE_URLS=http://+:5033
+      - ConnectionStrings__DefaultConnection=Data Source=/app/data/urubu.db
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5033/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
